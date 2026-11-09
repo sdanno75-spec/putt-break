@@ -46,6 +46,221 @@
   .led{width:8px;height:8px;border-radius:50%;background:#3a4048;}
   .led.ok{background:var(--green);box-shadow:0 0 8px var(--green);}
   .led.hold{background:var(--orange);box-shadow:0 0 8px var(--orange);}
+
+  /* ===== アプリ内タブ（画面の切り替え） ===== */
+  #root{height:100vh;height:100dvh;display:flex;flex-direction:column;}
+  #tabBar{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px 8px;}
+  .tab{height:44px;border-radius:12px;font-size:15px;font-weight:700;color:var(--dim);background:#161a1f;border:1px solid #2a3038;}
+  .tab.on{background:var(--orange);color:#111;border-color:var(--orange);}
+  #views{position:relative;flex:1 1 auto;min-height:0;}
+  .view{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+  /* ===== 計算タブ専用の見た目（#calcView の中だけに効く） ===== */
+#calcView{
+    --bg:#000;
+    --panel:#111214;
+    --panel2:#1a1c1f;
+    --line:#2c2f34;
+    --text:#ffffff;
+    --sub:#a9b0b8;
+    --yellow:#ffe14a;
+    --green:#39ff88;
+    --up:#ff8a3d;
+    --up-bg:#2a1608;
+    --down:#3ec8ff;
+    --down-bg:#071d29;
+    --flat:#ffffff;
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+    font-feature-settings:"tnum";
+    color:var(--text);
+}
+#calcView .num{font-family:inherit;font-variant-numeric:normal;}
+  #calcView *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  #calcView .app{
+    min-height:100%;
+    display:flex;flex-direction:column;gap:clamp(5px,1dvh,8px);
+    padding:0 12px max(8px,env(safe-area-inset-bottom));
+    max-width:520px;margin:0 auto;
+  }
+  #calcView .label{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--sub)}
+
+  /* ---------- 出力 ---------- */
+  #calcView .result{
+    background:linear-gradient(160deg,#15171a,#0b0c0d);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:clamp(6px,1.2dvh,12px) 12px;
+    display:flex;flex-direction:column;gap:clamp(4px,.8dvh,7px);
+  }
+  #calcView .result-top{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+  #calcView .virtual .num{
+    font-size:clamp(44px,8.5dvh,76px);font-weight:900;line-height:.95;color:var(--yellow);
+    letter-spacing:-.02em;
+  }
+  #calcView .virtual .unit{font-size:clamp(20px,3.5dvh,28px);font-weight:800;color:var(--yellow);margin-left:2px}
+  #calcView .takeback{text-align:right}
+  #calcView .takeback .num{font-size:clamp(30px,5.5dvh,46px);font-weight:900;color:var(--green);line-height:1}
+  #calcView .takeback .unit{font-size:clamp(15px,2.4dvh,20px);font-weight:800;color:var(--green);margin-left:2px}
+
+  #calcView .stance-wrap{
+    position:relative;background:#07080a;border:1px solid #23262b;border-radius:10px;
+    padding:2px 4px;
+  }
+  #calcView .stance-svg{display:block;width:100%;height:auto;max-height:12dvh}
+  #calcView .stance-svg text{font-family:inherit;font-weight:800}
+  #calcView .stance-head{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 0}
+  #calcView .stance-cap{font-size:10px;font-weight:700;color:var(--sub);letter-spacing:.05em}
+  #calcView .hand-toggle{display:flex;background:#1a1c1f;border:1px solid #33373d;border-radius:999px;padding:2px}
+  #calcView .hand-toggle button{
+    border:none;background:transparent;color:var(--sub);font-family:inherit;
+    font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;min-height:28px;
+  }
+  #calcView .hand-toggle button.on{background:var(--yellow);color:#000}
+
+  #calcView .assist{
+    display:flex;align-items:center;gap:8px;
+    background:#0d1f14;border:1px solid #1e5a37;border-radius:10px;
+    padding:clamp(4px,.9dvh,8px) 10px;
+    font-size:clamp(13px,2.1dvh,16px);font-weight:800;color:var(--text);line-height:1.3;
+  }
+  #calcView .assist .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+
+  #calcView .aim{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:#1f1a05;border:1px solid #5a4c12;border-radius:10px;
+    padding:clamp(4px,.9dvh,8px) 10px;
+  }
+  #calcView .aim .label{color:#d9c66a}
+  #calcView .aim-val{font-size:clamp(17px,2.8dvh,22px);font-weight:900;color:var(--yellow);text-align:right;line-height:1.2}
+  #calcView .aim-val small{font-size:.7em;color:#e8dca0;font-weight:800;margin-left:4px}
+  #calcView .aim.straight{background:#111214;border-color:var(--line)}
+  #calcView .aim.straight .aim-val{color:var(--text)}
+
+  /* ---------- 横傾斜（曲がり） ---------- */
+  #calcView .side{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:6px;display:flex;flex-direction:column;gap:6px;
+  }
+  #calcView .side-levels{display:grid;grid-template-columns:.8fr 1fr 1fr 1fr;gap:6px}
+  #calcView .xbtn{
+    min-height:clamp(42px,6.2dvh,54px);border-radius:12px;border:2px solid #3b2f52;
+    background:#1a1426;color:#c9a8ff;font-family:inherit;font-weight:800;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    transition:transform .08s, background .15s;
+  }
+  #calcView .xbtn:active{transform:scale(.96)}
+  #calcView .xbtn .name{font-size:clamp(15px,2.4dvh,18px)}
+  #calcView .xbtn .coef{font-size:11px;font-weight:700;opacity:.75}
+  #calcView .xbtn.none{background:var(--panel2);color:var(--text);border-color:#33373d}
+  #calcView .xbtn.on{background:#c9a8ff;color:#000;border-color:#fff}
+  #calcView .xbtn.none.on{background:#fff}
+  #calcView .side-fine{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:stretch}
+  #calcView .dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#1a1c1f;border:1px solid #33373d;border-radius:12px;padding:3px}
+  #calcView .dir-toggle button{
+    border:none;border-radius:9px;background:transparent;color:var(--sub);font-family:inherit;
+    font-weight:800;font-size:13px;padding:3px 2px;line-height:1.15;min-height:42px;white-space:nowrap;
+  }
+  #calcView .dir-toggle button small{display:block;font-size:10px;font-weight:700;opacity:.85}
+  #calcView .dir-toggle button.on{background:#c9a8ff;color:#000}
+  #calcView .dir-toggle.off button.on{background:#3a3f46;color:var(--text)}
+  #calcView .fine{display:flex;align-items:center;gap:4px}
+  #calcView .fine button{
+    width:44px;min-height:42px;border-radius:10px;border:1px solid #33373d;
+    background:var(--panel2);color:var(--text);font-size:24px;font-weight:700;line-height:1;
+  }
+  #calcView .fine button:active{background:#2c3036}
+  #calcView .fine-val{min-width:58px;text-align:center;font-size:18px;font-weight:900;color:#c9a8ff}
+  #calcView .fine-val small{display:block;font-size:10px;color:var(--sub);font-weight:700}
+
+  /* ---------- 距離入力 ---------- */
+  #calcView .distance{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:6px;display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:8px;align-items:center;
+  }
+  #calcView .step-btn{
+    height:clamp(44px,6.8dvh,60px);border:none;border-radius:12px;
+    background:var(--panel2);color:var(--text);
+    font-size:clamp(34px,5.5dvh,44px);font-weight:700;line-height:1;
+    border:1px solid #33373d;
+  }
+  #calcView .step-btn:active{background:#2c3036;transform:scale(.97)}
+  #calcView .dist-center{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+  #calcView .dist-input-wrap{display:flex;align-items:baseline;justify-content:center}
+  #calcView #distInput{
+    width:100%;max-width:120px;background:transparent;border:none;outline:none;
+    color:var(--text);text-align:center;
+    font-size:clamp(30px,5dvh,44px);font-weight:900;font-family:inherit;
+    border-bottom:2px solid #3a3f46;padding:0;
+    -moz-appearance:textfield;
+  }
+  #calcView #distInput:focus{border-bottom-color:var(--yellow)}
+  #calcView #distInput::-webkit-outer-spin-button,#calcView #distInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  #calcView .dist-unit{font-size:18px;font-weight:800;color:var(--sub);margin-left:2px}
+  #calcView .step-toggle{display:flex;gap:4px;margin-top:2px}
+  #calcView .step-toggle button{
+    border:1px solid #3a3f46;background:transparent;color:var(--sub);
+    font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;
+  }
+  #calcView .step-toggle button.on{background:var(--text);color:#000;border-color:var(--text)}
+
+  /* ---------- 傾斜 ---------- */
+  #calcView .slope{display:grid;grid-template-columns:.75fr repeat(3,1fr);grid-template-rows:1fr 1fr;gap:5px;flex:1 0 auto}
+  #calcView .slope .flatb{grid-column:1;grid-row:1 / span 2}
+    #calcView .sbtn{
+    min-height:46px;border-radius:12px;border:2px solid transparent;
+    font-family:inherit;font-weight:800;color:var(--text);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    transition:transform .08s, background .15s, border-color .15s;
+  }
+  #calcView .sbtn:active{transform:scale(.96)}
+  #calcView .sbtn .name{font-size:clamp(14px,2.2dvh,17px);line-height:1.15;text-align:center}
+  #calcView .sbtn .coef{font-size:clamp(11px,1.7dvh,13px);font-weight:700;opacity:.75}
+  #calcView .sbtn.up{background:var(--up-bg);color:var(--up);border-color:#4a2a12}
+  #calcView .sbtn.down{background:var(--down-bg);color:var(--down);border-color:#123a4d}
+  #calcView .sbtn.flatb{background:var(--panel2);color:var(--flat);border-color:#33373d}
+  #calcView .sbtn.up.on{background:var(--up);color:#000;border-color:#fff}
+  #calcView .sbtn.down.on{background:var(--down);color:#000;border-color:#fff}
+  #calcView .sbtn.flatb.on{background:#fff;color:#000;border-color:#fff}
+  #calcView .sbtn.on .coef{opacity:1}
+
+  /* ---------- 固定メッセージ ---------- */
+  #calcView .footer{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border-top:1px solid var(--line);padding-top:clamp(4px,.8dvh,6px);
+    font-size:clamp(11px,1.8dvh,13px);font-weight:800;color:var(--yellow);
+  }
+  #calcView .footer span{white-space:nowrap}
+  #calcView .footer-left{display:flex;align-items:center;gap:6px}
+  #calcView .gear{
+    width:36px;height:34px;border-radius:999px;border:1px solid #33373d;background:#1a1c1f;
+    color:var(--text);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  #calcView .beat{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a3f46;margin-right:5px;vertical-align:1px;transition:background .06s}
+  #calcView .beat.on{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
+
+  /* ---------- 設定 ---------- */
+  #calcView .modal{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.72);display:none;align-items:flex-end;justify-content:center}
+  #calcView .modal.open{display:flex}
+  #calcView .sheet{
+    width:100%;max-width:520px;background:#111214;border:1px solid var(--line);border-bottom:none;
+    border-radius:18px 18px 0 0;padding:16px 14px max(16px,env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:14px;
+  }
+  #calcView .sheet h2{font-size:18px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+  #calcView .sheet h2 button{border:none;background:transparent;color:var(--sub);font-size:26px;line-height:1;padding:0 4px}
+  #calcView .set-row{background:var(--panel2);border:1px solid #2c2f34;border-radius:12px;padding:10px}
+  #calcView .set-row .label{margin-bottom:6px}
+  #calcView .set-ctrl{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center}
+  #calcView .set-ctrl button{height:52px;border-radius:12px;border:1px solid #33373d;background:#24272c;color:var(--text);font-size:28px;font-weight:700}
+  #calcView .set-ctrl button:active{background:#2f3339}
+  #calcView .set-val{text-align:center;font-size:32px;font-weight:900;color:var(--yellow)}
+  #calcView .set-val small{font-size:15px;color:var(--sub);margin-left:3px}
+  #calcView .set-note{font-size:11.5px;color:var(--sub);line-height:1.5;margin-top:6px}
+  #calcView .sheet-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+  #calcView .sheet-actions button{height:48px;border-radius:12px;font-family:inherit;font-weight:800;font-size:15px;border:1px solid #33373d}
+  #calcView #setReset{background:transparent;color:var(--sub)}
+  #calcView #setDone{background:var(--yellow);color:#000;border-color:var(--yellow)}
+  #calcView .footer-text{display:flex;flex-direction:column;align-items:flex-end;line-height:1.35}
 </style>
 </head>
 <body class="overflow-hidden">
@@ -65,11 +280,20 @@
 </div>
 
 <!-- ===== Device ===== -->
-<main class="h-full w-full flex items-stretch justify-center p-3" style="padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom));">
+<div id="root">
+<!-- ===== 切り替えボタン ===== -->
+<nav id="tabBar">
+  <button class="tab on" data-view="sensorView">傾斜を測る</button>
+  <button class="tab" data-view="calcView">振り幅を計算</button>
+</nav>
+<div id="views">
+<!-- ===== タブ1：傾斜を測る ===== -->
+<section id="sensorView" class="view">
+<main class="min-h-full w-full flex items-stretch justify-center p-3" style="padding-top:0;padding-bottom:max(12px,env(safe-area-inset-bottom));">
 <div class="shell w-full max-w-md flex flex-col p-3 gap-3">
 
   <!-- Top: Visualizer -->
-  <section class="screen relative overflow-hidden" style="flex:1 1 auto;min-height:190px;">
+  <section class="screen relative overflow-hidden" style="flex:1 1 auto;min-height:160px;">
     <canvas id="viz" class="absolute inset-0 w-full h-full"></canvas>
     <div class="absolute top-2 left-3 lbl">START LINE</div>
     <div id="aimLabel" class="absolute top-2 right-3 num text-sm font-bold italic" style="color:var(--orange)">—</div>
@@ -154,22 +378,240 @@
     </div>
 
     <div class="screen p-2 flex items-center gap-2">
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="-0.5">−</button>
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="-0.25">−</button>
       <div class="flex-1 text-center">
         <div class="lbl">STIMP</div>
         <div><span id="stimpVal" class="num text-4xl font-bold">10.0</span> <span id="stimpFt" class="num text-xs" style="color:var(--dim)"></span></div>
       </div>
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="0.5">＋</button>
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="0.25">＋</button>
     </div>
   </section>
 </div>
 </main>
+</section>
+
+<!-- ===== タブ2：振り幅を計算 ===== -->
+<section id="calcView" class="view hidden">
+<div class="app">
+
+  <!-- 出力エリア -->
+  <section class="result" aria-live="polite">
+    <div class="result-top">
+      <div class="virtual">
+        <div class="label">仮想距離</div>
+        <span class="num" id="virtualOut">5.0</span><span class="unit">m</span>
+      </div>
+      <div class="takeback">
+        <div class="label">テークバック</div>
+        <span class="num" id="takebackOut">25.0</span><span class="unit">cm</span>
+      </div>
+    </div>
+    <div class="stance-wrap">
+      <!-- 1単位 = 1cm。x=0 がボール中心、右（+）がバックスイング方向 -->
+      <svg class="stance-svg" viewBox="-34 -10 78 28" aria-label="テークバックのアニメーション">
+        <!-- 右打ち基準で描画。左打ちのときはこのグループごと左右反転する -->
+        <g id="mirror">
+        <g id="ticks"></g>
+        <!-- ボールの線（ターゲットライン） -->
+        <line x1="-34" y1="0" x2="44" y2="0" stroke="#2f3338" stroke-width=".35" stroke-dasharray="1.2 1"/>
+        <!-- 足（スタンス幅 約53cm：右足外側 = 26.5cm） -->
+        <rect x="-27" y="5.5" width="6.5" height="16" rx="3" fill="#24272c" stroke="#5a6068" stroke-width=".35"/>
+        <rect x="20.5" y="5.5" width="6.5" height="16" rx="3" fill="#24272c" stroke="#5a6068" stroke-width=".35"/>
+        <text id="footFront" x="-23.75" y="12.5" font-size="2.6" fill="#a9b0b8" text-anchor="middle">左足</text>
+        <text id="footBack" x="23.75" y="12.5" font-size="2.6" fill="#a9b0b8" text-anchor="middle">右足</text>
+        <text id="cupText" x="-27" y="-6" font-size="2.4" fill="#a9b0b8" text-anchor="middle">◀ カップ</text>
+        <!-- 5m基準（25cm） -->
+        <line x1="25" y1="-6.5" x2="25" y2="3.5" stroke="#ffe14a" stroke-width=".35" stroke-dasharray=".8 .6" opacity=".7"/>
+        <text x="25" y="-7.3" font-size="2.2" fill="#ffe14a" text-anchor="middle" opacity=".8">★</text>
+        <!-- 今回の振り幅 -->
+        <g id="targetMark">
+          <line id="tmLine" x1="25" y1="-5" x2="25" y2="4.5" stroke="#39ff88" stroke-width=".55"/>
+          <text id="tmText" x="25" y="8.6" font-size="3" fill="#39ff88" text-anchor="middle">25.0cm</text>
+        </g>
+        <!-- 振り幅の範囲 -->
+        <line id="rangeLine" x1="0" y1="-3.6" x2="25" y2="-3.6" stroke="#39ff88" stroke-width=".35" opacity=".45"/>
+        <!-- ボール -->
+        <circle id="ball" cx="0" cy="0" r="2.13" fill="#fff"/>
+        <!-- パターヘッド（左端＝フェース） -->
+        <g id="putter">
+          <rect x="0" y="-5" width="2.8" height="10" rx=".8" fill="#c9d1d9" stroke="#fff" stroke-width=".25"/>
+          <rect x="2.2" y="-0.5" width="4" height="1" rx=".4" fill="#8a939c"/>
+        </g>
+        </g>
+      </svg>
+    </div>
+    <div class="assist"><span class="dot"></span><span id="assistOut">右足の小指・靴の外側ライン（★5m基準）</span></div>
+    <div class="aim straight" id="aimBox">
+      <span class="label">仮想カップ</span>
+      <span class="aim-val" id="aimOut">カップ真ん中</span>
+    </div>
+  </section>
+
+  <!-- 距離入力 -->
+  <section class="distance">
+    <button class="step-btn" id="minusBtn" aria-label="距離を減らす">−</button>
+    <div class="dist-center">
+      <div class="label">カップまで</div>
+      <div class="dist-input-wrap">
+        <input id="distInput" type="number" inputmode="decimal" step="0.1" min="0.5" max="50" value="5">
+        <span class="dist-unit">m</span>
+      </div>
+      <div class="step-toggle">
+        <button data-step="0.5" class="on">0.5m</button>
+        <button data-step="1">1m</button>
+      </div>
+    </div>
+    <button class="step-btn" id="plusBtn" aria-label="距離を増やす">＋</button>
+  </section>
+
+  <!-- 傾斜選択 -->
+  <section class="slope" id="slope">
+    <button class="sbtn flatb on" data-k="1.00"><span class="name">平ら</span><span class="coef">×1.00</span></button>
+      <button class="sbtn up" data-k="1.05"><span class="name">上り<br>ちょい</span><span class="coef">×1.05</span></button>
+      <button class="sbtn up" data-k="1.15"><span class="name">上り<br>標準</span><span class="coef">×1.15</span></button>
+      <button class="sbtn up" data-k="1.30"><span class="name">上り<br>めちゃ</span><span class="coef">×1.30</span></button>
+      <button class="sbtn down" data-k="0.95"><span class="name">下り<br>ちょい</span><span class="coef">×0.95</span></button>
+      <button class="sbtn down" data-k="0.85"><span class="name">下り<br>標準</span><span class="coef">×0.85</span></button>
+      <button class="sbtn down" data-k="0.65"><span class="name">下り<br>めちゃ</span><span class="coef">×0.65</span></button>
+  </section>
+
+  <!-- 横傾斜（曲がり） -->
+  <section class="side">
+    <div class="side-levels" id="sideLevels">
+      <button class="xbtn none on" data-p="0"><span class="name">まっすぐ</span><span class="coef">0%</span></button>
+      <button class="xbtn" data-p="0.5"><span class="name">ちょい</span><span class="coef">横0.5%</span></button>
+      <button class="xbtn" data-p="1"><span class="name">標準</span><span class="coef">横1%</span></button>
+      <button class="xbtn" data-p="2"><span class="name">めちゃ</span><span class="coef">横2%</span></button>
+    </div>
+    <div class="side-fine">
+      <div class="dir-toggle off" id="dirToggle">
+        <button data-dir="left">◀ 左へ曲がる<small id="hintL">フック</small></button>
+        <button data-dir="right" class="on">右へ曲がる ▶<small id="hintR">スライス</small></button>
+      </div>
+      <div class="fine">
+        <button id="sideMinus" aria-label="横傾斜を減らす">−</button>
+        <div class="fine-val"><span id="sideVal">0.0</span>%<small>微調整</small></div>
+        <button id="sidePlus" aria-label="横傾斜を増やす">＋</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 固定メッセージ -->
+  <footer class="footer">
+    <div class="footer-left">
+    <button class="gear" id="openSettings" aria-label="設定">⚙</button>
+    <div class="hand-toggle" role="group" aria-label="利き手">
+      <button data-hand="left" class="on">左打ち</button>
+      <button data-hand="right">右打ち</button>
+    </div>
+    </div>
+    <div class="footer-text"><span><i class="beat" id="beatDot"></i>テンポ: <b id="bpmText">75</b>BPM (2:1)</span><span><span id="stimpText">9.75</span>ft / スタンス: 肩幅(約53cm)</span></div>
+  </footer>
+
+  <!-- 設定 -->
+  <div class="modal" id="settings" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-label="設定">
+      <h2>設定<button id="closeSettings" aria-label="閉じる">×</button></h2>
+      <div class="set-row">
+        <div class="label">グリーンスピード（スティンプ）</div>
+        <div class="set-ctrl">
+          <button data-set="stimp" data-d="-0.25">−</button>
+          <div class="set-val"><span id="calcStimpVal">9.75</span><small>ft</small></div>
+          <button data-set="stimp" data-d="0.25">＋</button>
+        </div>
+        <div class="set-note">速いグリーンほど振り幅は小さく、曲がりは大きくなります。基準（5m＝25cm）は9.75ftです。</div>
+      </div>
+      <div class="set-row">
+        <div class="label">テンポ</div>
+        <div class="set-ctrl">
+          <button data-set="bpm" data-d="-1">−</button>
+          <div class="set-val"><span id="bpmVal">75</span><small>BPM</small></div>
+          <button data-set="bpm" data-d="1">＋</button>
+        </div>
+        <div class="set-note">1拍目でテークバック開始、2拍目でインパクト（バック:ダウン＝2:1）。アニメーションに反映されます。</div>
+      </div>
+      <div class="sheet-actions">
+        <button id="setReset">初期値に戻す</button>
+        <button id="setDone">完了</button>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+</div>
+</div>
+
+<script>
+// ================= 2つのタブで共通に使う値と計算 =================
+const Shared = (() => {
+  const FT_PER_M = 3.28084;
+  const CUP_CM = 4.25 * 2.54;          // カップ直径
+  const DEFAULT_STIMP = 9.75;
+  const DIST_RANGE = [0.5, 50];        // 距離の範囲（m）
+  const STIMP_RANGE = [6, 15];
+  const G = 9.8, STIMP_V = 1.83;       // 重力／スティンプメーターの初速（m/s）
+
+  const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+  const clamp = (v, [a, b]) => Math.max(a, Math.min(b, v));
+
+  // 保存済みの値を読む（共通化する前の保存形式からも引き継ぐ）
+  function loadDist(){
+    const saved = read('pbr_shared_distM');
+    if (Number.isFinite(saved)) return clamp(saved, DIST_RANGE);
+    const old = read('pbr_dist');
+    if (Number.isFinite(old)) return clamp(read('pbr_unit') === 'm' ? old : old / FT_PER_M, DIST_RANGE);
+    return 10 / FT_PER_M;              // 初期値は10ft
+  }
+  function loadStimp(){
+    const saved = read('pbr_stimp');
+    if (Number.isFinite(saved)) return clamp(saved, STIMP_RANGE);
+    const cfg = read('putt-cfg');
+    if (cfg && Number.isFinite(cfg.stimp)) return clamp(cfg.stimp, STIMP_RANGE);
+    return DEFAULT_STIMP;
+  }
+
+  let distM = loadDist();
+  let stimp = loadStimp();
+  const listeners = [];
+  const notify = source => listeners.forEach(fn => fn(source));
+
+  // カップの横のどこを狙うか（cm）
+  //   転がりの減速度 aF：スティンプの初速1.83m/s と、転がった距離から求める
+  //   横方向の加速度 aS：転がる球なので 重力 × 5/7 × 横傾斜
+  //   狙いのズレ = 距離 × aS ÷ (2 × aF × 上り下り係数)
+  //   ※カップを40cmほどオーバーする強さの狙い位置に近い値。目安なので実測で調整する
+  function aimOffsetCm(d, k, sidePct){
+    const aF = STIMP_V * STIMP_V / (2 * stimp * 0.3048);
+    const aS = (5 / 7) * G * (sidePct / 100);
+    return d * aS / (2 * aF * k) * 100;
+  }
+
+  return {
+    FT_PER_M, CUP_CM, DEFAULT_STIMP, aimOffsetCm,
+    get distM(){ return distM; },
+    get stimp(){ return stimp; },
+    setDistM(m, source){
+      distM = clamp(m, DIST_RANGE);
+      write('pbr_shared_distM', distM);
+      notify(source);
+      return distM;
+    },
+    setStimp(v, source){
+      stimp = clamp(Math.round(v * 4) / 4, STIMP_RANGE);   // 0.25刻み
+      write('pbr_stimp', stimp);
+      notify(source);
+      return stimp;
+    },
+    onChange(fn){ listeners.push(fn); }
+  };
+})();
+</script>
 
 <script>
 (() => {
   // ================= State =================
-  const FT_PER_M = 3.28084;
-  const CUP_IN = 4.25;                 // カップ直径（インチ）
+  const FT_PER_M = Shared.FT_PER_M;
   const store = {
     get(k, d){ try{ const v = localStorage.getItem('pbr_'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
     set(k, v){ try{ localStorage.setItem('pbr_'+k, JSON.stringify(v)); }catch(e){} }
@@ -177,8 +619,6 @@
 
   const S = {
     unit:  store.get('unit','ft'),     // 'ft' | 'm'
-    dist:  store.get('dist',10),       // 現在の単位での値
-    stimp: store.get('stimp',10),
     offB:  store.get('offB',0),        // キャリブレーション補正（度）
     offG:  store.get('offG',0),
     lat: 0,      // 横傾斜 %（＋＝右下がり → 右に切れる）
@@ -194,21 +634,25 @@
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
   const toRad = d => d*Math.PI/180, toDeg = r => r*180/Math.PI;
 
-  // ================= Physics (簡易モデル) =================
-  // Break(in) = 距離(ft) × 横傾斜% × 係数K × (Stimp/10) × 上り下り補正
-  const K = 0.33;
+  // 共通の距離（m）を、今の単位での表示値にする
+  const shownDist = () => S.unit==='ft'
+    ? Math.round(Shared.distM*FT_PER_M*2)/2
+    : Math.round(Shared.distM*10)/10;
+
+  // ================= Physics =================
+  // 狙い位置は「振り幅を計算」タブと同じ式（Shared.aimOffsetCm）を使う
   function compute(){
-    const distFt = S.unit==='ft' ? S.dist : S.dist*FT_PER_M;
-    const stimpF = S.stimp/10;
-    // 上りは強く打つので曲がりが減り、下りは増える
-    const slopeF = clamp(1 - 0.06*S.fall*stimpF, 0.4, 1.8);
-    const breakIn = distFt * Math.abs(S.lat) * K * stimpF * slopeF;
+    const distM = Shared.distM, distFt = distM*FT_PER_M;
+    const stimpF = Shared.stimp/10;
+    // 上り下り込みで「何倍の距離を打つか」。上りは強く打つので曲がりが減り、下りは増える
+    const playK = clamp(1 + 0.06*S.fall*stimpF, 0.4, 2.0);
+    const breakCm = Shared.aimOffsetCm(distM, playK, Math.abs(S.lat));
+    const breakIn = breakCm/2.54;
     const breakFt = breakIn/12;
     const angle = toDeg(Math.atan2(breakFt, distFt));       // 打ち出し角
-    // 上り下りの「何ft打ち」
-    const playFt = distFt * clamp(1 + 0.06*S.fall*stimpF, 0.4, 2.0);
+    const playFt = distFt * playK;                          // 上り下りの「何ft打ち」
     const dir = Math.abs(S.lat) < 0.2 ? 0 : (S.lat > 0 ? 1 : -1); // 1=右に切れる
-    return { distFt, breakIn, breakFt, angle, playFt, dir, cups: breakIn/CUP_IN };
+    return { distFt, breakIn, breakFt, angle, playFt, dir, cups: breakCm/Shared.CUP_CM };
   }
 
   // ================= Sensor =================
@@ -265,12 +709,10 @@
   function step(act, s){
     if (act === 'dist'){
       const st = S.unit==='ft' ? s : s*0.5;
-      const max = S.unit==='ft' ? 100 : 30;
-      S.dist = Math.round(clamp(S.dist + st, S.unit==='ft'?1:0.5, max) * 2) / 2;
-      store.set('dist', S.dist);
+      const next = Math.round((shownDist() + st) * 2) / 2;
+      Shared.setDistM(S.unit==='ft' ? next/FT_PER_M : next, 'sensor');
     } else if (act === 'stimp'){
-      S.stimp = clamp(Math.round((S.stimp + s)*2)/2, 6, 15);
-      store.set('stimp', S.stimp);
+      Shared.setStimp(Shared.stimp + s, 'sensor');
     } else if (act === 'lat'){
       S.lat = clamp(Math.round((S.lat + s)*10)/10, -8, 8);
     } else if (act === 'fall'){
@@ -293,9 +735,8 @@
   });
 
   $('unitBtn').addEventListener('click', () => {
-    if (S.unit === 'ft'){ S.unit='m'; S.dist = Math.max(0.5, Math.round(S.dist/FT_PER_M*2)/2); }
-    else { S.unit='ft'; S.dist = Math.max(1, Math.round(S.dist*FT_PER_M)); }
-    store.set('unit', S.unit); store.set('dist', S.dist);
+    S.unit = S.unit === 'ft' ? 'm' : 'ft';
+    store.set('unit', S.unit);
   });
 
   $('holdBtn').addEventListener('click', () => {
@@ -346,6 +787,7 @@
 
   function draw(R){
     const W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;                // 別タブを表示中は描かない
     ctx.clearRect(0,0,W,H);
 
     // グリーン背景
@@ -361,7 +803,7 @@
     for (let i=1;i<4;i++){
       const y = ballY - vert*i/4;
       ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(W-10,y); ctx.stroke();
-      const d = (S.dist*i/4); ctx.fillText((d%1? d.toFixed(1): d)+S.unit, 10, y-3);
+      const d = (shownDist()*i/4); ctx.fillText((d%1? d.toFixed(1): d)+S.unit, 10, y-3);
     }
 
     // 打ち出し方向の計算（横方向は×3で誇張）
@@ -461,10 +903,10 @@
     }
 
     // 下段
-    $('distVal').textContent = S.unit==='ft' ? S.dist : S.dist.toFixed(1);
+    $('distVal').textContent = S.unit==='ft' ? shownDist() : shownDist().toFixed(1);
     $('distUnit').textContent = S.unit;
-    $('stimpVal').textContent = S.stimp.toFixed(1);
-    $('stimpFt').textContent = S.stimp<=8 ? 'SLOW' : S.stimp>=12 ? 'FAST' : 'MED';
+    $('stimpVal').textContent = Shared.stimp.toFixed(2);
+    $('stimpFt').textContent = Shared.stimp<=8 ? 'SLOW' : Shared.stimp>=12 ? 'FAST' : 'MED';
 
     draw(R);
     requestAnimationFrame(render);
@@ -472,6 +914,340 @@
 
   fit();
   requestAnimationFrame(render);
+})();
+</script>
+
+<script>
+(() => {
+  // ===== 基準データ =====
+  const BASE_DIST = 5;      // 仮想距離 5m
+  const BASE_SWING = 25;    // テークバック 25cm
+
+  const state = { dist: Shared.distM, k: 1.00, step: 0.5, hand: 'left', side: 0, dir: 'right' };   // デフォルトは左打ち
+  try { const h = localStorage.getItem('putt-hand'); if (h === 'left' || h === 'right') state.hand = h; } catch(e){}
+
+  // ===== 設定（グリーンスピード・テンポ） =====
+  const DEFAULTS = { stimp: Shared.DEFAULT_STIMP, bpm: 75 };
+  const LIMITS = { stimp: [6, 15], bpm: [50, 120] };
+  // Stimp は2つのタブで共通（Shared）。テンポだけこのタブで保存する
+  const cfg = { bpm: DEFAULTS.bpm };
+  Object.defineProperty(cfg, 'stimp', { enumerable: true, get: () => Shared.stimp, set: v => Shared.setStimp(v, 'calc') });
+  try {
+    const c = JSON.parse(localStorage.getItem('putt-cfg') || '{}');
+    if (isFinite(c.bpm)) cfg.bpm = c.bpm;
+  } catch(e){}
+
+  const $ = id => document.getElementById(id);
+  const distInput = $('distInput');
+
+  // ===== 計算 =====
+  // 仮想距離 = ターゲット距離 × 傾斜係数
+  const virtualDistance = (d, k) => d * k;
+  // d ∝ A² より A = 25 × √(仮想距離 / 5)
+  const takeback = v => BASE_SWING * Math.sqrt(v / BASE_DIST);
+
+  // 表示値(小数第1位)で判定。各区間の間(例:12.6〜12.9)は下側の区間に含める
+  function assistText(cm){
+    if (cm <= 12.5 || cm < 13.0) return '右足内側と体の中心の間';
+    if (cm < 18.5) return '右足内側のやや内';
+    if (cm < 21.5) return '右足靴のすぐ内側';
+    if (cm < 24.5) return '右足の親指〜中指付近';
+    if (cm < 26.5) return '右足の小指・靴の外側ライン（★5m基準）';
+    return '右足スタンス幅より外側';
+  }
+
+  const round1 = n => Math.round(n * 10) / 10;
+
+  // ===== 曲がり（仮想カップ） =====
+  // 計算式は2つのタブで共通（Shared.aimOffsetCm）
+  const BASE_STIMP = 9.75;
+  const CUP_CM = Shared.CUP_CM;
+  const SIDE_STEP = 0.1, SIDE_MAX = 6;   // 微調整は0.1%刻み
+  const aimOffsetCm = Shared.aimOffsetCm;
+
+  function render(){
+    const v = virtualDistance(state.dist, state.k);
+    const cm = round1(takeback(v * BASE_STIMP / cfg.stimp));
+    $('virtualOut').textContent = round1(v).toFixed(1);
+    $('takebackOut').textContent = cm.toFixed(1);
+    const back = state.hand === 'left' ? '左足' : '右足';
+    $('assistOut').textContent = assistText(cm).replace(/右足/g, back);
+    setSwing(cm);
+    renderAim();
+  }
+
+  function renderAim(){
+    const box = $('aimBox'), out = $('aimOut');
+    if (state.side <= 0){
+      box.classList.add('straight');
+      out.textContent = 'カップ真ん中';
+      return;
+    }
+    box.classList.remove('straight');
+    const off = aimOffsetCm(state.dist, state.k, state.side);
+    // 右に曲がるならカップの左を狙う
+    const aimSide = state.dir === 'right' ? '左' : '右';
+    const cups = off / CUP_CM;
+    const offTxt = off >= 100 ? (off / 100).toFixed(2) + 'm' : Math.round(off) + 'cm';
+    out.innerHTML = `カップの${aimSide} ${offTxt}<small>(${cups.toFixed(1)}個分)</small>`;
+  }
+
+  // ===== 横傾斜の入力 =====
+  function setSide(p){
+    state.side = Math.min(SIDE_MAX, Math.max(0, Math.round(p * 10) / 10));
+    $('sideVal').textContent = state.side.toFixed(1);
+    document.querySelectorAll('#sideLevels .xbtn').forEach(b =>
+      b.classList.toggle('on', parseFloat(b.dataset.p) === state.side));
+    $('dirToggle').classList.toggle('off', state.side === 0);
+    renderAim();
+  }
+  $('sideLevels').addEventListener('click', e => {
+    const b = e.target.closest('.xbtn');
+    if (!b) return;
+    setSide(parseFloat(b.dataset.p));
+    if (navigator.vibrate) navigator.vibrate(8);
+  });
+  $('sideMinus').addEventListener('click', () => setSide(state.side - SIDE_STEP));
+  $('sidePlus').addEventListener('click', () => setSide(state.side + SIDE_STEP));
+  document.querySelectorAll('#dirToggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      state.dir = b.dataset.dir;
+      document.querySelectorAll('#dirToggle button').forEach(x => x.classList.toggle('on', x === b));
+      if (state.side === 0) setSide(0.5);   // 方向だけ押したら「ちょい」を入れる
+      else renderAim();
+    });
+  });
+
+  // ===== ストローク図（目盛り・振り幅表示） =====
+  const SVG_MAX_X = 42;   // 図に収まる右端(cm)
+  (function drawTicks(){
+    const g = $('ticks');
+    let html = '';
+    for (let x = -30; x <= 40; x += 5){
+      const major = x % 10 === 0;
+      html += `<line x1="${x}" y1="-1.4" x2="${x}" y2="${major ? 1.8 : 1}" stroke="#3a3f46" stroke-width="${major ? .3 : .2}"/>`;
+      if (major && x > 0) html += `<text x="${x}" y="4" font-size="2" fill="#5d646c" text-anchor="middle">${x}</text>`;
+    }
+    g.innerHTML = html;
+  })();
+
+  // 左打ち：図全体を左右反転（x → 10 − x）。文字だけは裏返らないように戻す
+  function fixText(el){
+    const x = parseFloat(el.getAttribute('x'));
+    el.setAttribute('transform', state.hand === 'left' ? `translate(${2 * x} 0) scale(-1 1)` : '');
+  }
+  function applyHand(){
+    const L = state.hand === 'left';
+    $('mirror').setAttribute('transform', L ? 'translate(10 0) scale(-1 1)' : '');
+    $('footBack').textContent  = L ? '左足' : '右足';
+    $('footFront').textContent = L ? '右足' : '左足';
+    $('cupText').textContent   = L ? 'カップ ▶' : '◀ カップ';
+    $('hintL').textContent = L ? 'スライス' : 'フック';
+    $('hintR').textContent = L ? 'フック' : 'スライス';
+    document.querySelectorAll('.stance-svg text').forEach(fixText);
+    document.querySelectorAll('.hand-toggle button').forEach(b =>
+      b.classList.toggle('on', b.dataset.hand === state.hand));
+  }
+  document.querySelectorAll('.hand-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      state.hand = b.dataset.hand;
+      try { localStorage.setItem('putt-hand', state.hand); } catch(e){}
+      applyHand();
+      render();
+    });
+  });
+
+  let swingCm = 25;
+  function setSwing(cm){
+    swingCm = cm;
+    const x = Math.min(cm, SVG_MAX_X);
+    const over = cm > SVG_MAX_X;
+    $('tmLine').setAttribute('x1', x); $('tmLine').setAttribute('x2', x);
+    const t = $('tmText');
+    t.setAttribute('x', Math.min(x, SVG_MAX_X - 3));
+    t.textContent = (over ? (state.hand === 'left' ? '←' : '→') : '') + cm.toFixed(1) + 'cm';
+    fixText(t);
+    $('rangeLine').setAttribute('x2', x);
+  }
+
+  // ===== ストロークのアニメーション（設定BPMに同期 / 2:1） =====
+  // 1サイクル = 3拍。
+  //   拍1の頭：テークバック開始（2/3拍）→ 切り返し → ダウン（1/3拍）→ 拍2の頭でインパクト
+  //   拍2〜3：フォロー・ボールが転がる・ヘッドが戻る → 次の拍1で再びテークバック
+  const BALL_R = 2.13;
+  const ease = p => 0.5 - 0.5 * Math.cos(Math.PI * p);   // 往復の自然な減速
+  const accel = p => p * p;                                // ダウンは加速
+  const decel = p => 1 - (1 - p) * (1 - p);
+  const putter = $('putter'), ball = $('ball'), beatDot = $('beatDot');
+  const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let t0 = performance.now(), lastBpm = cfg.bpm;
+
+  function frame(now){
+    if ($('calcView').classList.contains('hidden')){ requestAnimationFrame(frame); return; }   // 別タブ表示中は動かさない
+    if (cfg.bpm !== lastBpm){ t0 = now; lastBpm = cfg.bpm; }   // テンポ変更時は拍1からやり直し
+    const BEAT = 60000 / cfg.bpm;
+    const T_BACK = BEAT * 2 / 3, T_DOWN = BEAT / 3;
+    const T_FOLLOW = BEAT * 0.35, T_ROLL = BEAT * 1.1, T_RESET = BEAT * 0.5;
+    const CYCLE = BEAT * 3;
+
+    const A = Math.min(swingCm, SVG_MAX_X);   // フェース位置(ボール中心からcm)
+    const face0 = BALL_R;                     // アドレス時はフェースがボールに接する
+    const tc = (now - t0) % CYCLE;
+    let t = tc, face = face0, bx = 0, bop = 1;
+
+    beatDot.classList.toggle('on', (tc % BEAT) < 110);
+
+    if (reduced){ face = A; }
+    else if (t < T_BACK){
+      face = face0 + (A - face0) * ease(t / T_BACK);
+    } else if ((t -= T_BACK) < T_DOWN){
+      face = A - (A - face0) * accel(t / T_DOWN);
+    } else {
+      t -= T_DOWN;   // ここが拍2（インパクト）
+      const followEnd = face0 - A * 0.5;
+      face = face0 + (followEnd - face0) * decel(Math.min(1, t / T_FOLLOW));
+      const rp = Math.min(1, t / T_ROLL);
+      bx = -30 * decel(rp);
+      bop = rp > .6 ? 1 - (rp - .6) / .4 : 1;
+      if (t > T_ROLL){
+        const bp = Math.min(1, (t - T_ROLL) / T_RESET);
+        face = followEnd + (face0 - followEnd) * ease(bp);
+        bx = 0;
+        bop = Math.max(0, (t - T_ROLL - T_RESET) / (BEAT * 0.3));   // アドレスでボールが戻る
+        bop = Math.min(1, bop);
+      }
+    }
+    putter.setAttribute('transform', `translate(${face} 0)`);
+    ball.setAttribute('cx', bx);
+    ball.setAttribute('opacity', bop);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ===== 設定画面 =====
+  const modal = $('settings');
+  function showCfg(){
+    $('calcStimpVal').textContent = cfg.stimp.toFixed(2);
+    $('bpmVal').textContent = cfg.bpm;
+    $('stimpText').textContent = cfg.stimp.toFixed(2);
+    $('bpmText').textContent = cfg.bpm;
+  }
+  function saveCfg(){ try { localStorage.setItem('putt-cfg', JSON.stringify(cfg)); } catch(e){} }
+  function changeCfg(key, d){
+    const [lo, hi] = LIMITS[key];
+    cfg[key] = Math.min(hi, Math.max(lo, Math.round((cfg[key] + d) * 100) / 100));
+    showCfg(); saveCfg(); render();
+  }
+  document.querySelectorAll('[data-set]').forEach(b => {
+    let t1, t2;
+    const fire = () => changeCfg(b.dataset.set, parseFloat(b.dataset.d));
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); fire(); t1 = setTimeout(() => { t2 = setInterval(fire, 100); }, 450); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  });
+  const openM = () => { modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); };
+  const closeM = () => { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); };
+  $('openSettings').addEventListener('click', openM);
+  $('closeSettings').addEventListener('click', closeM);
+  $('setDone').addEventListener('click', closeM);
+  modal.addEventListener('click', e => { if (e.target === modal) closeM(); });
+  $('setReset').addEventListener('click', () => { Object.assign(cfg, DEFAULTS); showCfg(); saveCfg(); render(); });
+  showCfg();
+
+  function setDist(d, syncInput = true){
+    if (!isFinite(d)) return;
+    state.dist = Shared.setDistM(round1(d), 'calc');
+    if (syncInput) distInput.value = round1(state.dist);
+    render();
+  }
+
+
+  // ===== ＋/− ボタン（長押しで連続増減） =====
+  function bindRepeat(btn, dir){
+    let t1, t2;
+    const fire = () => {
+      // ステップの倍数にスナップしてから増減
+      const s = state.step;
+      const snapped = dir > 0 ? Math.floor(state.dist / s + 1e-9) * s + s
+                              : Math.ceil(state.dist / s - 1e-9) * s - s;
+      setDist(snapped);
+      if (navigator.vibrate) navigator.vibrate(8);
+    };
+    const stop = () => { clearTimeout(t1); clearInterval(t2); };
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      distInput.blur();
+      fire();
+      t1 = setTimeout(() => { t2 = setInterval(fire, 110); }, 450);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  bindRepeat($('plusBtn'), 1);
+  bindRepeat($('minusBtn'), -1);
+
+  // ===== 刻み切替 =====
+  document.querySelectorAll('.step-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.step-toggle button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      state.step = parseFloat(b.dataset.step);
+    });
+  });
+
+  // ===== 直接入力 =====
+  distInput.addEventListener('input', () => {
+    const d = parseFloat(distInput.value);
+    if (isFinite(d) && d > 0) setDist(d, false);
+  });
+  distInput.addEventListener('change', () => setDist(parseFloat(distInput.value) || state.dist));
+  distInput.addEventListener('focus', () => distInput.select());
+  distInput.addEventListener('keydown', e => { if (e.key === 'Enter') distInput.blur(); });
+
+  // ===== 傾斜選択 =====
+  $('slope').addEventListener('click', e => {
+    const b = e.target.closest('.sbtn');
+    if (!b) return;
+    document.querySelectorAll('.sbtn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.k = parseFloat(b.dataset.k);
+    if (navigator.vibrate) navigator.vibrate(8);
+    render();
+  });
+
+  // 「傾斜を測る」タブで距離・Stimpが変わったら、こちらにも反映する
+  distInput.value = round1(state.dist);
+  Shared.onChange(source => {
+    if (source === 'calc') return;
+    state.dist = Shared.distM;
+    if (document.activeElement !== distInput) distInput.value = round1(state.dist);
+    showCfg();
+    render();
+  });
+
+  applyHand();
+  render();
+})();
+</script>
+
+<script>
+// ================= タブの切り替え =================
+(() => {
+  const tabs = [...document.querySelectorAll('.tab')];
+  function show(viewId){
+    tabs.forEach(t => {
+      const on = t.dataset.view === viewId;
+      t.classList.toggle('on', on);
+      document.getElementById(t.dataset.view).classList.toggle('hidden', !on);
+    });
+    window.dispatchEvent(new Event('resize'));   // 表示された画面のCanvasを描き直す
+    try { localStorage.setItem('pbr_tab', viewId); } catch(e) {}
+  }
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.view)));
+  try {
+    const saved = localStorage.getItem('pbr_tab');
+    if (tabs.some(t => t.dataset.view === saved)) show(saved);
+  } catch(e) {}
 })();
 </script>
 </body>
