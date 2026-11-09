@@ -15,7 +15,8 @@
     --bg:#07090b; --shell:#111418; --panel:#171b20; --line:#2a3038;
     --txt:#f2f5f7; --dim:#8b96a3; --orange:#ff8a1f; --green:#3ee07f; --red:#ff4d4d;
   }
-  html,body{height:100%;background:var(--bg);color:var(--txt);}
+  /* ページ全体を画面に固定して、指で動かしてもズレないようにする */
+  html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:var(--txt);}
   body{
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
@@ -48,9 +49,9 @@
   .led.hold{background:var(--orange);box-shadow:0 0 8px var(--orange);}
 
   /* ===== アプリ内タブ（画面の切り替え） ===== */
-  #root{height:100vh;height:100dvh;display:flex;flex-direction:column;}
-  #tabBar{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:max(8px,env(safe-area-inset-top)) 12px 8px;}
-  .tab{height:44px;border-radius:12px;font-size:15px;font-weight:700;color:var(--dim);background:#161a1f;border:1px solid #2a3038;}
+  #root{height:100%;display:flex;flex-direction:column;}
+  #tabBar{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:max(6px,env(safe-area-inset-top)) 10px 6px;}
+  .tab{height:36px;border-radius:11px;font-size:14px;font-weight:700;color:var(--dim);background:#161a1f;border:1px solid #2a3038;}
   .tab.on{background:var(--orange);color:#111;border-color:var(--orange);}
   #views{position:relative;flex:1 1 auto;min-height:0;}
   .view{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -261,6 +262,30 @@
   #calcView #setReset{background:transparent;color:var(--sub)}
   #calcView #setDone{background:var(--yellow);color:#000;border-color:var(--yellow)}
   #calcView .footer-text{display:flex;flex-direction:column;align-items:flex-end;line-height:1.35}
+
+  /* ---------- iPhone 15 Pro の Safari に収める調整／文字数が変わっても高さを変えない ---------- */
+  #calcView .app{padding:0 10px max(6px,env(safe-area-inset-bottom));}
+  #calcView .virtual .num{font-size:clamp(40px,7.5dvh,76px);}
+  #calcView .stance-svg{max-height:9dvh;}
+  #calcView #distInput{font-size:clamp(28px,4.4dvh,44px);}
+  #calcView .footer{padding-top:3px;}
+  #calcView .gear{height:30px;}
+  #calcView .hand-toggle button{min-height:24px;padding:2px 12px;}
+  #calcView .assist,#calcView .aim{height:32px;padding-top:0;padding-bottom:0;white-space:nowrap;overflow:hidden;}
+  #calcView .aim .label{flex:none;}
+  #calcView .distance{grid-template-columns:1fr 1.8fr 1fr;padding:4px 6px;}
+  #calcView .dist-center{display:grid;grid-template-columns:auto auto;align-items:center;justify-content:center;column-gap:8px;row-gap:0;}
+  #calcView .dist-center .label{grid-column:1;grid-row:1;}
+  #calcView .step-toggle{grid-column:2;grid-row:1;margin-top:0;}
+  #calcView .step-toggle button{font-size:11px;padding:2px 7px;}
+  #calcView .dist-input-wrap{grid-column:1 / span 2;grid-row:2;}
+  #calcView .sbtn{min-height:40px;}
+  #calcView .sbtn .name br{display:none;}
+  #calcView .sbtn .name{white-space:nowrap;}
+  #calcView .xbtn{min-height:40px;}
+  #calcView .xbtn .name{font-size:14px;white-space:nowrap;}
+  #calcView .dir-toggle button{min-height:38px;}
+  #calcView .fine button{min-height:38px;}
 </style>
 </head>
 <body class="overflow-hidden">
@@ -289,11 +314,11 @@
 <div id="views">
 <!-- ===== タブ1：傾斜を測る ===== -->
 <section id="sensorView" class="view">
-<main class="min-h-full w-full flex items-stretch justify-center p-3" style="padding-top:0;padding-bottom:max(12px,env(safe-area-inset-bottom));">
-<div class="shell w-full max-w-md flex flex-col p-3 gap-3">
+<main class="h-full w-full flex items-stretch justify-center px-2.5" style="padding-top:0;padding-bottom:max(6px,env(safe-area-inset-bottom));">
+<div class="shell w-full max-w-md flex flex-col p-2 gap-2" style="border-radius:20px;">
 
   <!-- Top: Visualizer -->
-  <section class="screen relative overflow-hidden" style="flex:1 1 auto;min-height:160px;">
+  <section class="screen relative overflow-hidden" style="flex:1 1 0;min-height:90px;">
     <canvas id="viz" class="absolute inset-0 w-full h-full"></canvas>
     <div class="absolute top-2 left-3 lbl">START LINE</div>
     <div id="aimLabel" class="absolute top-2 right-3 num text-sm font-bold italic" style="color:var(--orange)">—</div>
@@ -302,36 +327,35 @@
 
   <!-- Readout strip -->
   <section class="grid grid-cols-3 gap-2">
-    <div class="screen px-2 py-1.5 text-center">
+    <div class="screen px-1 py-1 text-center whitespace-nowrap overflow-hidden">
       <div class="lbl">AIM</div>
       <div id="outAngle" class="num text-xl font-bold" style="color:var(--orange)">0.0°</div>
     </div>
-    <div class="screen px-2 py-1.5 text-center">
+    <div class="screen px-1 py-1 text-center whitespace-nowrap overflow-hidden">
       <div class="lbl">BREAK</div>
-      <div id="outBreak" class="num text-xl font-bold">0 in</div>
-      <div id="outCups" class="num text-[11px]" style="color:var(--dim)">0.0 cups</div>
+      <div class="num text-xl font-bold leading-7"><span id="outBreak">0 in</span> <span id="outCups" class="text-[11px] font-normal" style="color:var(--dim)">0.0 cups</span></div>
     </div>
-    <div class="screen px-2 py-1.5 text-center">
+    <div class="screen px-1 py-1 text-center whitespace-nowrap overflow-hidden">
       <div class="lbl">PLAY AS</div>
       <div id="outPlay" class="num text-xl font-bold" style="color:var(--green)">10 ft</div>
     </div>
   </section>
 
   <!-- Middle: Main slope panel -->
-  <section class="screen p-3 flex items-center gap-3">
+  <section class="screen px-3 py-2 flex items-center gap-3">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2">
         <span id="led" class="led"></span>
         <span id="statusTxt" class="lbl">WAITING</span>
       </div>
-      <div class="flex items-end gap-2 mt-1">
-        <div id="slopeBig" class="num text-[64px] leading-none font-bold italic">0.0</div>
-        <div class="pb-2">
+      <div class="flex items-center gap-2 whitespace-nowrap" style="height:56px;">
+        <div id="slopeBig" class="num text-[56px] leading-none font-bold italic">0.0</div>
+        <div>
           <div class="lbl">% SLOPE</div>
-          <div id="slopeDir" class="text-sm font-bold mt-0.5">ストレート</div>
+          <div id="slopeDir" class="text-sm font-bold leading-tight" style="height:36px;">ストレート</div>
         </div>
       </div>
-      <div class="flex items-center gap-3 mt-2">
+      <div class="flex items-center gap-3 whitespace-nowrap">
         <span id="fallTxt" class="num text-base font-bold">FLAT 0.0%</span>
         <span id="totalTxt" class="num text-xs" style="color:var(--dim)">TOTAL 0.0%</span>
       </div>
@@ -348,42 +372,45 @@
 
   <!-- Manual slope input (shown only in manual mode) -->
   <section id="manualPanel" class="hidden grid grid-cols-2 gap-2">
-    <div class="screen p-2 flex items-center justify-between">
-      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="lat" data-step="-0.5">−</button>
-      <div class="text-center"><div class="lbl">L / R</div><div class="text-[10px]" style="color:var(--dim)">＋で右に切れる</div></div>
-      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="lat" data-step="0.5">＋</button>
+    <div class="screen p-1 flex items-center justify-between">
+      <button class="key rpt w-11 h-10 rounded-xl num text-2xl" data-act="lat" data-step="-0.5">−</button>
+      <div class="text-center whitespace-nowrap"><div class="lbl">L / R</div><div class="text-[9px]" style="color:var(--dim)">＋で右に切れる</div></div>
+      <button class="key rpt w-11 h-10 rounded-xl num text-2xl" data-act="lat" data-step="0.5">＋</button>
     </div>
-    <div class="screen p-2 flex items-center justify-between">
-      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="fall" data-step="-0.5">−</button>
-      <div class="text-center"><div class="lbl">UP / DN</div><div class="text-[10px]" style="color:var(--dim)">＋で上り</div></div>
-      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="fall" data-step="0.5">＋</button>
+    <div class="screen p-1 flex items-center justify-between">
+      <button class="key rpt w-11 h-10 rounded-xl num text-2xl" data-act="fall" data-step="-0.5">−</button>
+      <div class="text-center whitespace-nowrap"><div class="lbl">UP / DN</div><div class="text-[9px]" style="color:var(--dim)">＋で上り</div></div>
+      <button class="key rpt w-11 h-10 rounded-xl num text-2xl" data-act="fall" data-step="0.5">＋</button>
     </div>
   </section>
 
   <!-- Bottom: Controls -->
   <section class="flex flex-col gap-2">
     <div class="flex gap-2">
-      <button id="zeroBtn" class="key flex-1 h-11 rounded-xl chip text-sm">ZERO</button>
-      <button id="holdBtn" class="key flex-1 h-11 rounded-xl chip text-sm">HOLD</button>
-      <button id="unitBtn" class="key flex-1 h-11 rounded-xl chip text-sm">FT / M</button>
+      <button id="zeroBtn" class="key flex-1 h-9 rounded-xl chip text-sm">ZERO</button>
+      <button id="holdBtn" class="key flex-1 h-9 rounded-xl chip text-sm">HOLD</button>
+      <button id="unitBtn" class="key flex-1 h-9 rounded-xl chip text-sm">FT / M</button>
     </div>
 
-    <div class="screen p-2 flex items-center gap-2">
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="dist" data-step="-1">−</button>
-      <div class="flex-1 text-center">
-        <div class="lbl">DISTANCE</div>
-        <div><span id="distVal" class="num text-4xl font-bold">10</span> <span id="distUnit" class="num text-lg" style="color:var(--dim)">ft</span></div>
+    <!-- Distance と Stimp を横並びにして高さを節約 -->
+    <div class="grid grid-cols-2 gap-2">
+      <div class="screen p-1.5 flex items-center gap-1">
+        <button class="key rpt w-11 h-14 shrink-0 rounded-xl num text-3xl leading-none" data-act="dist" data-step="-1">−</button>
+        <div class="flex-1 min-w-0 text-center whitespace-nowrap">
+          <div class="lbl" style="letter-spacing:.04em">DISTANCE</div>
+          <div><span id="distVal" class="num text-2xl font-bold">10</span> <span id="distUnit" class="num text-xs" style="color:var(--dim)">ft</span></div>
+        </div>
+        <button class="key rpt w-11 h-14 shrink-0 rounded-xl num text-3xl leading-none" data-act="dist" data-step="1">＋</button>
       </div>
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="dist" data-step="1">＋</button>
-    </div>
 
-    <div class="screen p-2 flex items-center gap-2">
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="-0.25">−</button>
-      <div class="flex-1 text-center">
-        <div class="lbl">STIMP</div>
-        <div><span id="stimpVal" class="num text-4xl font-bold">10.0</span> <span id="stimpFt" class="num text-xs" style="color:var(--dim)"></span></div>
+      <div class="screen p-1.5 flex items-center gap-1">
+        <button class="key rpt w-11 h-14 shrink-0 rounded-xl num text-3xl leading-none" data-act="stimp" data-step="-0.25">−</button>
+        <div class="flex-1 min-w-0 text-center whitespace-nowrap">
+          <div class="lbl" style="letter-spacing:.04em">STIMP <span id="stimpFt"></span></div>
+          <div><span id="stimpVal" class="num text-2xl font-bold">10.0</span></div>
+        </div>
+        <button class="key rpt w-11 h-14 shrink-0 rounded-xl num text-3xl leading-none" data-act="stimp" data-step="0.25">＋</button>
       </div>
-      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="0.25">＋</button>
     </div>
   </section>
 </div>
@@ -784,6 +811,7 @@ const Shared = (() => {
     ctx.setTransform(dpr,0,0,dpr,0,0);
   }
   window.addEventListener('resize', fit);
+  new ResizeObserver(fit).observe(cv);   // 手入力パネルの表示などで枠の大きさが変わったときも描き直す
 
   function draw(R){
     const W = cv.clientWidth, H = cv.clientHeight;
@@ -1202,6 +1230,7 @@ const Shared = (() => {
   });
   distInput.addEventListener('change', () => setDist(parseFloat(distInput.value) || state.dist));
   distInput.addEventListener('focus', () => distInput.select());
+  distInput.addEventListener('blur', () => window.scrollTo(0, 0));   // キーボードが閉じたら画面を元の位置へ
   distInput.addEventListener('keydown', e => { if (e.key === 'Enter') distInput.blur(); });
 
   // ===== 傾斜選択 =====
