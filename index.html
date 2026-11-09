@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07090b">
+<title>Putt Break Reader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07090b; --shell:#111418; --panel:#171b20; --line:#2a3038;
+    --txt:#f2f5f7; --dim:#8b96a3; --orange:#ff8a1f; --green:#3ee07f; --red:#ff4d4d;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--txt);}
+  body{
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    overscroll-behavior:none;
+  }
+  .num{font-family:"Chakra Petch",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .shell{
+    background:linear-gradient(180deg,#15191e 0%,#0d1013 100%);
+    border:1px solid #23292f;border-radius:28px;
+    box-shadow:0 0 0 2px #000, inset 0 1px 0 rgba(255,255,255,.06), 0 20px 50px rgba(0,0,0,.6);
+  }
+  .screen{
+    background:#0b0e11;border:1px solid var(--line);border-radius:16px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.7);
+  }
+  .lbl{font-family:"Chakra Petch",monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);font-style:italic;font-weight:700;}
+  .key{
+    background:linear-gradient(180deg,#262c33,#1a1e23);
+    border:1px solid #333b44;border-bottom-color:#0d0f12;
+    box-shadow:0 3px 0 #050607, inset 0 1px 0 rgba(255,255,255,.08);
+    transition:transform .05s, box-shadow .05s;
+  }
+  .key:active,.key.pressed{transform:translateY(3px);box-shadow:0 0 0 #050607, inset 0 1px 0 rgba(255,255,255,.05);}
+  .chip{font-family:"Chakra Petch",monospace;font-weight:700;letter-spacing:.08em;}
+  .chip.on{background:var(--orange);color:#111;border-color:var(--orange);}
+  #bubble{transition:transform .08s linear;}
+  .led{width:8px;height:8px;border-radius:50%;background:#3a4048;}
+  .led.ok{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .led.hold{background:var(--orange);box-shadow:0 0 8px var(--orange);}
+</style>
+</head>
+<body class="overflow-hidden">
+
+<!-- ===== Start overlay (iOS permission) ===== -->
+<div id="startOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center" style="background:var(--bg)">
+  <div class="num text-4xl font-bold italic tracking-wider">+/- <span style="color:var(--orange)">BREAK</span></div>
+  <div class="lbl mt-2">GREEN SLOPE READER</div>
+  <p class="text-sm mt-8 leading-relaxed" style="color:var(--dim)">
+    スマホを画面を上にしてグリーンに置き、<br>
+    <b class="text-white">端末の上端をカップに向けて</b>ください。<br>
+    傾斜センサーを使うため、許可が必要です。
+  </p>
+  <button id="startBtn" class="key mt-10 w-full max-w-xs h-16 rounded-2xl num text-2xl font-bold italic tracking-widest" style="color:var(--orange)">START</button>
+  <button id="manualBtn" class="mt-5 text-sm underline" style="color:var(--dim)">センサーを使わず手入力で使う</button>
+  <p id="startMsg" class="text-xs mt-6 min-h-[1.5em]" style="color:var(--red)"></p>
+</div>
+
+<!-- ===== Device ===== -->
+<main class="h-full w-full flex items-stretch justify-center p-3" style="padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom));">
+<div class="shell w-full max-w-md flex flex-col p-3 gap-3">
+
+  <!-- Top: Visualizer -->
+  <section class="screen relative overflow-hidden" style="flex:1 1 auto;min-height:190px;">
+    <canvas id="viz" class="absolute inset-0 w-full h-full"></canvas>
+    <div class="absolute top-2 left-3 lbl">START LINE</div>
+    <div id="aimLabel" class="absolute top-2 right-3 num text-sm font-bold italic" style="color:var(--orange)">—</div>
+    <div class="absolute bottom-1.5 right-3 text-[10px]" style="color:#55606c">横方向 ×3 誇張表示</div>
+  </section>
+
+  <!-- Readout strip -->
+  <section class="grid grid-cols-3 gap-2">
+    <div class="screen px-2 py-1.5 text-center">
+      <div class="lbl">AIM</div>
+      <div id="outAngle" class="num text-xl font-bold" style="color:var(--orange)">0.0°</div>
+    </div>
+    <div class="screen px-2 py-1.5 text-center">
+      <div class="lbl">BREAK</div>
+      <div id="outBreak" class="num text-xl font-bold">0 in</div>
+      <div id="outCups" class="num text-[11px]" style="color:var(--dim)">0.0 cups</div>
+    </div>
+    <div class="screen px-2 py-1.5 text-center">
+      <div class="lbl">PLAY AS</div>
+      <div id="outPlay" class="num text-xl font-bold" style="color:var(--green)">10 ft</div>
+    </div>
+  </section>
+
+  <!-- Middle: Main slope panel -->
+  <section class="screen p-3 flex items-center gap-3">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <span id="led" class="led"></span>
+        <span id="statusTxt" class="lbl">WAITING</span>
+      </div>
+      <div class="flex items-end gap-2 mt-1">
+        <div id="slopeBig" class="num text-[64px] leading-none font-bold italic">0.0</div>
+        <div class="pb-2">
+          <div class="lbl">% SLOPE</div>
+          <div id="slopeDir" class="text-sm font-bold mt-0.5">ストレート</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <span id="fallTxt" class="num text-base font-bold">FLAT 0.0%</span>
+        <span id="totalTxt" class="num text-xs" style="color:var(--dim)">TOTAL 0.0%</span>
+      </div>
+    </div>
+    <!-- bubble level -->
+    <div class="relative shrink-0 rounded-full" style="width:92px;height:92px;background:radial-gradient(circle,#13261a 0%,#0a120d 70%);border:2px solid #2f3a33;">
+      <div class="absolute inset-0 m-auto rounded-full" style="width:30px;height:30px;border:1px solid #3e5a46;"></div>
+      <div class="absolute left-1/2 top-0 bottom-0" style="width:1px;background:#24352a"></div>
+      <div class="absolute top-1/2 left-0 right-0" style="height:1px;background:#24352a"></div>
+      <div class="absolute text-[9px] num left-1/2 -translate-x-1/2" style="top:2px;color:#4c6655">CUP</div>
+      <div id="bubble" class="absolute rounded-full" style="width:20px;height:20px;left:36px;top:36px;background:radial-gradient(circle at 35% 35%,#eaffef,#3ee07f 60%,#1d8a4a);box-shadow:0 0 10px rgba(62,224,127,.6);"></div>
+    </div>
+  </section>
+
+  <!-- Manual slope input (shown only in manual mode) -->
+  <section id="manualPanel" class="hidden grid grid-cols-2 gap-2">
+    <div class="screen p-2 flex items-center justify-between">
+      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="lat" data-step="-0.5">−</button>
+      <div class="text-center"><div class="lbl">L / R</div><div class="text-[10px]" style="color:var(--dim)">＋で右に切れる</div></div>
+      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="lat" data-step="0.5">＋</button>
+    </div>
+    <div class="screen p-2 flex items-center justify-between">
+      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="fall" data-step="-0.5">−</button>
+      <div class="text-center"><div class="lbl">UP / DN</div><div class="text-[10px]" style="color:var(--dim)">＋で上り</div></div>
+      <button class="key rpt w-11 h-11 rounded-xl num text-2xl" data-act="fall" data-step="0.5">＋</button>
+    </div>
+  </section>
+
+  <!-- Bottom: Controls -->
+  <section class="flex flex-col gap-2">
+    <div class="flex gap-2">
+      <button id="zeroBtn" class="key flex-1 h-11 rounded-xl chip text-sm">ZERO</button>
+      <button id="holdBtn" class="key flex-1 h-11 rounded-xl chip text-sm">HOLD</button>
+      <button id="unitBtn" class="key flex-1 h-11 rounded-xl chip text-sm">FT / M</button>
+    </div>
+
+    <div class="screen p-2 flex items-center gap-2">
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="dist" data-step="-1">−</button>
+      <div class="flex-1 text-center">
+        <div class="lbl">DISTANCE</div>
+        <div><span id="distVal" class="num text-4xl font-bold">10</span> <span id="distUnit" class="num text-lg" style="color:var(--dim)">ft</span></div>
+      </div>
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="dist" data-step="1">＋</button>
+    </div>
+
+    <div class="screen p-2 flex items-center gap-2">
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="-0.5">−</button>
+      <div class="flex-1 text-center">
+        <div class="lbl">STIMP</div>
+        <div><span id="stimpVal" class="num text-4xl font-bold">10.0</span> <span id="stimpFt" class="num text-xs" style="color:var(--dim)"></span></div>
+      </div>
+      <button class="key rpt w-16 h-16 rounded-2xl num text-4xl leading-none" data-act="stimp" data-step="0.5">＋</button>
+    </div>
+  </section>
+</div>
+</main>
+
+<script>
+(() => {
+  // ================= State =================
+  const FT_PER_M = 3.28084;
+  const CUP_IN = 4.25;                 // カップ直径（インチ）
+  const store = {
+    get(k, d){ try{ const v = localStorage.getItem('pbr_'+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem('pbr_'+k, JSON.stringify(v)); }catch(e){} }
+  };
+
+  const S = {
+    unit:  store.get('unit','ft'),     // 'ft' | 'm'
+    dist:  store.get('dist',10),       // 現在の単位での値
+    stimp: store.get('stimp',10),
+    offB:  store.get('offB',0),        // キャリブレーション補正（度）
+    offG:  store.get('offG',0),
+    lat: 0,      // 横傾斜 %（＋＝右下がり → 右に切れる）
+    fall: 0,     // 縦傾斜 %（＋＝カップ方向が上り）
+    rawB: 0, rawG: 0,                  // 平滑化済み生角度
+    hold: false,
+    manual: false,
+    gotEvent: false,
+    hist: []                            // 安定判定用
+  };
+
+  const $ = id => document.getElementById(id);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const toRad = d => d*Math.PI/180, toDeg = r => r*180/Math.PI;
+
+  // ================= Physics (簡易モデル) =================
+  // Break(in) = 距離(ft) × 横傾斜% × 係数K × (Stimp/10) × 上り下り補正
+  const K = 0.33;
+  function compute(){
+    const distFt = S.unit==='ft' ? S.dist : S.dist*FT_PER_M;
+    const stimpF = S.stimp/10;
+    // 上りは強く打つので曲がりが減り、下りは増える
+    const slopeF = clamp(1 - 0.06*S.fall*stimpF, 0.4, 1.8);
+    const breakIn = distFt * Math.abs(S.lat) * K * stimpF * slopeF;
+    const breakFt = breakIn/12;
+    const angle = toDeg(Math.atan2(breakFt, distFt));       // 打ち出し角
+    // 上り下りの「何ft打ち」
+    const playFt = distFt * clamp(1 + 0.06*S.fall*stimpF, 0.4, 2.0);
+    const dir = Math.abs(S.lat) < 0.2 ? 0 : (S.lat > 0 ? 1 : -1); // 1=右に切れる
+    return { distFt, breakIn, breakFt, angle, playFt, dir, cups: breakIn/CUP_IN };
+  }
+
+  // ================= Sensor =================
+  const ALPHA = 0.12; // ローパスフィルタ
+  function onOrient(e){
+    if (e.beta == null || e.gamma == null) return;
+    S.gotEvent = true;
+    S.rawB += (e.beta  - S.rawB) * ALPHA;
+    S.rawG += (e.gamma - S.rawG) * ALPHA;
+    if (S.hold || S.manual) return;
+    const b = S.rawB - S.offB, g = S.rawG - S.offG;
+    // beta＋：上端（カップ側）が持ち上がる＝上り / gamma＋：右側が下がる＝右に切れる
+    S.fall = Math.tan(toRad(clamp(b,-60,60))) * 100;
+    S.lat  = Math.tan(toRad(clamp(g,-60,60))) * 100;
+    S.hist.push(S.lat, S.fall); if (S.hist.length > 40) S.hist.splice(0, 2);
+  }
+
+  async function start(){
+    const msg = $('startMsg');
+    try{
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function'){
+        const res = await DeviceOrientationEvent.requestPermission(); // iOS 13+：タップ起点で必須
+        if (res !== 'granted'){ msg.textContent = 'センサーの使用が許可されませんでした。手入力モードで使えます。'; return; }
+      }
+      if (!window.isSecureContext){
+        msg.textContent = 'センサーはHTTPSでのみ動作します。HTTPSのURLで開いてください。';
+      }
+      window.addEventListener('deviceorientation', onOrient, true);
+      $('startOverlay').classList.add('hidden');
+      wakeLock();
+      setTimeout(() => {
+        if (!S.gotEvent){ enableManual(); toast('センサーが見つからないため手入力モードにしました'); }
+      }, 2500);
+    }catch(err){
+      msg.textContent = '許可リクエストに失敗しました：' + err.message;
+    }
+  }
+
+  function enableManual(){
+    S.manual = true;
+    $('manualPanel').classList.remove('hidden');
+    $('startOverlay').classList.add('hidden');
+  }
+
+  // 画面スリープ防止（対応端末のみ）
+  let lock = null;
+  async function wakeLock(){
+    try{ if ('wakeLock' in navigator) lock = await navigator.wakeLock.request('screen'); }catch(e){}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible' && lock) wakeLock(); });
+
+  // ================= Controls =================
+  function step(act, s){
+    if (act === 'dist'){
+      const st = S.unit==='ft' ? s : s*0.5;
+      const max = S.unit==='ft' ? 100 : 30;
+      S.dist = Math.round(clamp(S.dist + st, S.unit==='ft'?1:0.5, max) * 2) / 2;
+      store.set('dist', S.dist);
+    } else if (act === 'stimp'){
+      S.stimp = clamp(Math.round((S.stimp + s)*2)/2, 6, 15);
+      store.set('stimp', S.stimp);
+    } else if (act === 'lat'){
+      S.lat = clamp(Math.round((S.lat + s)*10)/10, -8, 8);
+    } else if (act === 'fall'){
+      S.fall = clamp(Math.round((S.fall + s)*10)/10, -8, 8);
+    }
+  }
+
+  // 長押しで連続変化
+  document.querySelectorAll('.rpt').forEach(btn => {
+    let t1, t2;
+    const stop = () => { clearTimeout(t1); clearInterval(t2); btn.classList.remove('pressed'); };
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      btn.classList.add('pressed');
+      const a = btn.dataset.act, s = parseFloat(btn.dataset.step);
+      step(a, s);
+      t1 = setTimeout(() => { t2 = setInterval(() => step(a, s), 90); }, 420);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+  });
+
+  $('unitBtn').addEventListener('click', () => {
+    if (S.unit === 'ft'){ S.unit='m'; S.dist = Math.max(0.5, Math.round(S.dist/FT_PER_M*2)/2); }
+    else { S.unit='ft'; S.dist = Math.max(1, Math.round(S.dist*FT_PER_M)); }
+    store.set('unit', S.unit); store.set('dist', S.dist);
+  });
+
+  $('holdBtn').addEventListener('click', () => {
+    S.hold = !S.hold;
+    $('holdBtn').classList.toggle('on', S.hold);
+  });
+
+  // ZERO：平らな場所に置いてタップ → 補正。長押しで補正リセット
+  (() => {
+    const b = $('zeroBtn'); let t, long=false;
+    b.addEventListener('pointerdown', () => { long=false; t=setTimeout(() => {
+      long=true; S.offB=0; S.offG=0; store.set('offB',0); store.set('offG',0); toast('キャリブレーションをリセットしました');
+    }, 800); });
+    b.addEventListener('pointerup', () => {
+      clearTimeout(t);
+      if (long) return;
+      if (S.manual){ S.lat=0; S.fall=0; toast('傾斜を0にしました'); return; }
+      S.offB = S.rawB; S.offG = S.rawG; store.set('offB',S.offB); store.set('offG',S.offG);
+      toast('この面を0%に設定しました（長押しでリセット）');
+    });
+    b.addEventListener('pointerleave', () => clearTimeout(t));
+  })();
+
+  $('startBtn').addEventListener('click', start);
+  $('manualBtn').addEventListener('click', enableManual);
+
+  // ================= Toast =================
+  let toastEl;
+  function toast(text){
+    if (!toastEl){
+      toastEl = document.createElement('div');
+      toastEl.className = 'fixed left-1/2 -translate-x-1/2 bottom-8 z-50 px-4 py-2 rounded-xl text-sm transition-opacity duration-300';
+      toastEl.style.cssText = 'background:#1f252c;border:1px solid #39424c;opacity:0;max-width:90%;text-align:center;';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = text; toastEl.style.opacity = 1;
+    clearTimeout(toastEl._t); toastEl._t = setTimeout(() => toastEl.style.opacity = 0, 2000);
+  }
+
+  // ================= Canvas Visualizer =================
+  const cv = $('viz'), ctx = cv.getContext('2d');
+  function fit(){
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = r.width*dpr; cv.height = r.height*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize', fit);
+
+  function draw(R){
+    const W = cv.clientWidth, H = cv.clientHeight;
+    ctx.clearRect(0,0,W,H);
+
+    // グリーン背景
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0e1f15'); g.addColorStop(1,'#0a140e');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    const cx = W/2, cupY = 40, ballY = H-26, vert = ballY-cupY;
+
+    // 距離グリッド
+    ctx.strokeStyle = 'rgba(80,140,100,.15)'; ctx.lineWidth = 1;
+    ctx.font = '600 10px "Chakra Petch",monospace'; ctx.fillStyle = 'rgba(120,170,135,.45)';
+    for (let i=1;i<4;i++){
+      const y = ballY - vert*i/4;
+      ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(W-10,y); ctx.stroke();
+      const d = (S.dist*i/4); ctx.fillText((d%1? d.toFixed(1): d)+S.unit, 10, y-3);
+    }
+
+    // 打ち出し方向の計算（横方向は×3で誇張）
+    const EX = 3;
+    const trueOff = (R.breakFt / R.distFt) * vert;
+    const off = clamp(trueOff*EX, 0, W/2-20);
+    const aimX = cx - R.dir*off;       // 右に切れる → 左を狙う
+
+    // 基準線（白）
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx,ballY); ctx.lineTo(cx,cupY); ctx.stroke();
+
+    // 予測ライン（緑・破線）
+    if (R.dir !== 0){
+      const ctrlX = cx + (aimX-cx)*1.25, ctrlY = ballY - vert*0.62;
+      ctx.setLineDash([6,6]); ctx.strokeStyle = 'rgba(62,224,127,.85)'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx,ballY); ctx.quadraticCurveTo(ctrlX,ctrlY,cx,cupY); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Start Line（オレンジ）
+    ctx.strokeStyle = '#ff8a1f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(255,138,31,.6)'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(cx,ballY); ctx.lineTo(aimX,cupY); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 角度アーク
+    if (R.dir !== 0){
+      const a0 = -Math.PI/2, a1 = Math.atan2(cupY-ballY, aimX-cx);
+      ctx.strokeStyle = 'rgba(255,138,31,.7)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx,ballY,38, Math.min(a0,a1), Math.max(a0,a1)); ctx.stroke();
+    }
+
+    // 狙い点
+    ctx.fillStyle = '#ff8a1f';
+    ctx.beginPath(); ctx.arc(aimX,cupY,5,0,Math.PI*2); ctx.fill();
+
+    // カップ＆ピン
+    ctx.fillStyle = '#000'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx,cupY,8,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx,cupY); ctx.lineTo(cx,cupY-26); ctx.stroke();
+    ctx.fillStyle = '#ff4d4d';
+    ctx.beginPath(); ctx.moveTo(cx,cupY-26); ctx.lineTo(cx+14,cupY-21); ctx.lineTo(cx,cupY-16); ctx.fill();
+
+    // ボール
+    ctx.fillStyle = '#fff'; ctx.shadowColor='rgba(255,255,255,.5)'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(cx,ballY,7,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  }
+
+  // ================= Render loop =================
+  function render(){
+    const R = compute();
+
+    // 上部ラベル
+    let aim;
+    if (R.dir === 0) aim = 'STRAIGHT';
+    else {
+      const side = R.dir > 0 ? 'LEFT' : 'RIGHT';
+      aim = R.cups < 0.5 ? `INSIDE ${side}` : `${R.cups.toFixed(1)} CUPS ${side}`;
+    }
+    $('aimLabel').textContent = aim;
+
+    // 読み出し
+    $('outAngle').textContent = (R.dir===0 ? '0.0' : R.angle.toFixed(1)) + '°' + (R.dir>0?' L':R.dir<0?' R':'');
+    if (S.unit === 'ft') $('outBreak').textContent = Math.round(R.breakIn) + ' in';
+    else $('outBreak').textContent = Math.round(R.breakIn*2.54) + ' cm';
+    $('outCups').textContent = R.cups.toFixed(1) + ' cups';
+    const play = S.unit==='ft' ? R.playFt : R.playFt/FT_PER_M;
+    $('outPlay').textContent = (S.unit==='ft' ? Math.round(play) : play.toFixed(1)) + ' ' + S.unit;
+
+    // メインパネル
+    $('slopeBig').textContent = Math.abs(S.lat).toFixed(1);
+    $('slopeDir').innerHTML = R.dir===0 ? 'ストレート'
+      : R.dir>0 ? '<span style="color:var(--orange)">スライス ▶</span><br><span class="text-[11px]" style="color:var(--dim)">右へ切れる</span>'
+                : '<span style="color:var(--orange)">◀ フック</span><br><span class="text-[11px]" style="color:var(--dim)">左へ切れる</span>';
+    const f = S.fall;
+    $('fallTxt').textContent = Math.abs(f) < 0.2 ? 'FLAT 0.0%' : (f>0 ? '▲ UP ' : '▼ DOWN ') + Math.abs(f).toFixed(1) + '%';
+    $('fallTxt').style.color = Math.abs(f) < 0.2 ? 'var(--txt)' : (f>0 ? '#6cc3ff' : '#ff8f8f');
+    $('totalTxt').textContent = 'TOTAL ' + Math.hypot(S.lat, f).toFixed(1) + '%';
+
+    // 気泡（高い側へ動く）
+    const RAD = 36, FS = 5; // 5%でフルスケール
+    let bx = -S.lat/FS*RAD, by = -f/FS*RAD;
+    const m = Math.hypot(bx,by); if (m > RAD){ bx*=RAD/m; by*=RAD/m; }
+    $('bubble').style.transform = `translate(${bx}px,${by}px)`;
+
+    // ステータス
+    const led = $('led'), st = $('statusTxt');
+    if (S.manual){ led.className='led ok'; st.textContent='MANUAL'; }
+    else if (S.hold){ led.className='led hold'; st.textContent='HOLD'; }
+    else if (!S.gotEvent){ led.className='led'; st.textContent='WAITING'; }
+    else {
+      let mn=Infinity,mx=-Infinity; S.hist.forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v);});
+      const stable = S.hist.length>=40 && (mx-mn) < 0.6;
+      led.className = 'led' + (stable?' ok':''); st.textContent = stable ? 'STABLE' : 'MEASURING';
+    }
+
+    // 下段
+    $('distVal').textContent = S.unit==='ft' ? S.dist : S.dist.toFixed(1);
+    $('distUnit').textContent = S.unit;
+    $('stimpVal').textContent = S.stimp.toFixed(1);
+    $('stimpFt').textContent = S.stimp<=8 ? 'SLOW' : S.stimp>=12 ? 'FAST' : 'MED';
+
+    draw(R);
+    requestAnimationFrame(render);
+  }
+
+  fit();
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
